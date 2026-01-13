@@ -6,10 +6,10 @@ This document describes the architecture of the GitHub Settings Sync Action.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        GitHub Actions Runner                         │
+│                GitHub Actions Runner (Linux/macOS/Windows)           │
 ├─────────────────────────────────────────────────────────────────────┤
 │  ┌───────────────────────────────────────────────────────────────┐  │
-│  │                    Docker Container                            │  │
+│  │                 Composite Action (Python 3.13)                 │  │
 │  │  ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐   │  │
 │  │  │   main.py   │───▶│  config.py  │───▶│ settings.json   │   │  │
 │  │  │  (entry)    │    │  (loader)   │    │ (user config)   │   │  │
@@ -179,7 +179,7 @@ To add new functionality:
 ## Dependencies
 
 ```
-Python 3.11+ Standard Library Only
+Python 3.13 Standard Library Only
 ├── urllib.request    HTTP client
 ├── urllib.error      Error handling
 ├── json              Config parsing, API payloads

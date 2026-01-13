@@ -43,7 +43,7 @@
     "main": {
       "required_status_checks": {
         "strict": true,
-        "contexts": ["lint", "validate-examples", "docker-build"]
+        "contexts": ["lint", "validate-examples", "test-dry-run"]
       },
       "enforce_admins": false,
       "required_pull_request_reviews": {

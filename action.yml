@@ -26,12 +26,24 @@ inputs:
 outputs:
   changes:
     description: 'Summary of changes made'
+    value: ${{ steps.sync.outputs.changes }}
 
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
-  env:
-    GITHUB_TOKEN: ${{ inputs.token }}
-    SETTINGS_FILE: ${{ inputs.settings_file }}
-    DRY_RUN: ${{ inputs.dry_run }}
-    TARGET_REPOSITORY: ${{ inputs.repository }}
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Run settings sync
+      id: sync
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        SETTINGS_FILE: ${{ inputs.settings_file }}
+        DRY_RUN: ${{ inputs.dry_run }}
+        TARGET_REPOSITORY: ${{ inputs.repository }}
+      run: |
+        cd "${{ github.action_path }}/src"
+        python main.py

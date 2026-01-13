@@ -9,15 +9,14 @@ This is a **GitHub Action** written in pure Python (no 3rd party dependencies) t
 ## Key Design Decisions
 
 1. **No external dependencies** - Uses only Python standard library (`urllib`, `json`, `os`, `logging`)
-2. **Docker-based action** - Runs in a container for consistent execution
+2. **Composite action** - Runs directly on the runner (Linux, macOS, Windows) using Python 3.13
 3. **JSON configuration** - YAML is not in stdlib, so JSON is used instead
 4. **Modular sync system** - Each settings type (repo, labels, branches) has its own module
 
 ## Directory Structure
 
 ```
-├── action.yml          # GitHub Action definition (inputs, outputs, branding)
-├── Dockerfile          # Container image for the action
+├── action.yml          # GitHub Action definition (composite, inputs, outputs)
 ├── src/
 │   ├── main.py         # Entry point - orchestrates the sync process
 │   ├── config.py       # JSON config loading and validation
@@ -79,7 +78,6 @@ cd src && python main.py
 | Add new label field | `config.py`, `sync/labels.py` |
 | Add branch protection option | `config.py`, `sync/branches.py` |
 | Change action inputs | `action.yml`, `src/main.py` |
-| Update Docker image | `Dockerfile` |
 
 ## API Reference
 

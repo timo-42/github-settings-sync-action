@@ -1,0 +1,37 @@
+name: 'GitHub Settings Sync'
+description: 'Synchronize repository settings from a JSON configuration file - Settings as Code for GitHub'
+author: 'Your Name'
+
+branding:
+  icon: 'settings'
+  color: 'blue'
+
+inputs:
+  token:
+    description: 'GitHub token with repo permissions'
+    required: true
+  settings_file:
+    description: 'Path to the settings JSON file'
+    required: false
+    default: '.github/settings.json'
+  dry_run:
+    description: 'Preview changes without applying them'
+    required: false
+    default: 'false'
+  repository:
+    description: 'Target repository (owner/repo). Defaults to current repository'
+    required: false
+    default: ''
+
+outputs:
+  changes:
+    description: 'Summary of changes made'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    GITHUB_TOKEN: ${{ inputs.token }}
+    SETTINGS_FILE: ${{ inputs.settings_file }}
+    DRY_RUN: ${{ inputs.dry_run }}
+    TARGET_REPOSITORY: ${{ inputs.repository }}

@@ -38,18 +38,27 @@ VALID_REPOSITORY_KEYS = {
 
 VALID_LABEL_KEYS = {"name", "color", "description", "new_name"}
 
-VALID_BRANCH_PROTECTION_KEYS = {
+VALID_RULESET_KEYS = {
+    "name",
+    "target",
+    "enforcement",
+    "conditions",
+    "branches",
+    "exclude_branches",
+    "rules",
+    "bypass_actors",
+}
+
+VALID_RULESET_RULES_KEYS = {
+    "pull_request",
     "required_status_checks",
-    "enforce_admins",
-    "required_pull_request_reviews",
-    "restrictions",
+    "required_signatures",
     "required_linear_history",
-    "allow_force_pushes",
-    "allow_deletions",
-    "block_creations",
-    "required_conversation_resolution",
-    "lock_branch",
-    "allow_fork_syncing",
+    "required_deployments",
+    "creation",
+    "update",
+    "deletion",
+    "non_fast_forward",
 }
 
 
@@ -89,7 +98,7 @@ def load_config(file_path: str) -> dict:
 
 def validate_config(config: dict) -> None:
     """Validate the configuration structure."""
-    valid_sections = {"repository", "labels", "branch_protection"}
+    valid_sections = {"repository", "labels", "rulesets"}
     unknown_sections = set(config.keys()) - valid_sections
 
     if unknown_sections:
@@ -103,9 +112,9 @@ def validate_config(config: dict) -> None:
     if "labels" in config:
         validate_labels_config(config["labels"])
 
-    # Validate branch protection section
-    if "branch_protection" in config:
-        validate_branch_protection_config(config["branch_protection"])
+    # Validate rulesets section
+    if "rulesets" in config:
+        validate_rulesets_config(config["rulesets"])
 
 
 def validate_repository_config(repo_config: Any) -> None:
@@ -185,47 +194,71 @@ def validate_labels_config(labels_config: Any) -> None:
                 )
 
 
-def validate_branch_protection_config(bp_config: Any) -> None:
-    """Validate branch protection configuration."""
-    if not isinstance(bp_config, dict):
-        raise ConfigError("'branch_protection' must be an object")
+def validate_rulesets_config(rulesets_config: Any) -> None:
+    """Validate rulesets configuration."""
+    if not isinstance(rulesets_config, list):
+        raise ConfigError("'rulesets' must be an array")
 
-    for branch_name, protection in bp_config.items():
-        if not isinstance(protection, dict):
-            raise ConfigError(
-                f"Branch protection for '{branch_name}' must be an object"
-            )
+    for i, ruleset in enumerate(rulesets_config):
+        if not isinstance(ruleset, dict):
+            raise ConfigError(f"Ruleset at index {i} must be an object")
 
-        unknown_keys = set(protection.keys()) - VALID_BRANCH_PROTECTION_KEYS
-        if unknown_keys:
-            logger.warning(
-                f"Unknown branch protection keys for '{branch_name}': {unknown_keys}"
-            )
+        if "name" not in ruleset:
+            raise ConfigError(f"Ruleset at index {i} is missing required 'name' field")
 
-        # Validate required_status_checks
-        if "required_status_checks" in protection:
-            rsc = protection["required_status_checks"]
-            if rsc is not None:
+        name = ruleset["name"]
+
+        # Validate target
+        if "target" in ruleset:
+            if ruleset["target"] not in ("branch", "tag"):
+                raise ConfigError(
+                    f"Ruleset '{name}' target must be 'branch' or 'tag'"
+                )
+
+        # Validate enforcement
+        if "enforcement" in ruleset:
+            if ruleset["enforcement"] not in ("active", "evaluate", "disabled"):
+                raise ConfigError(
+                    f"Ruleset '{name}' enforcement must be 'active', 'evaluate', or 'disabled'"
+                )
+
+        # Validate branches (shorthand)
+        if "branches" in ruleset:
+            if not isinstance(ruleset["branches"], list):
+                raise ConfigError(f"Ruleset '{name}' branches must be an array")
+
+        # Validate rules
+        if "rules" in ruleset:
+            if not isinstance(ruleset["rules"], dict):
+                raise ConfigError(f"Ruleset '{name}' rules must be an object")
+
+            rules = ruleset["rules"]
+            unknown_rules = set(rules.keys()) - VALID_RULESET_RULES_KEYS
+            if unknown_rules:
+                logger.warning(f"Unknown rules in ruleset '{name}': {unknown_rules}")
+
+            # Validate pull_request rules
+            if "pull_request" in rules:
+                pr = rules["pull_request"]
+                if not isinstance(pr, dict):
+                    raise ConfigError(
+                        f"Ruleset '{name}' pull_request rules must be an object"
+                    )
+                if "required_approving_review_count" in pr:
+                    count = pr["required_approving_review_count"]
+                    if not isinstance(count, int) or count < 0 or count > 10:
+                        raise ConfigError(
+                            f"Ruleset '{name}' required_approving_review_count must be 0-10"
+                        )
+
+            # Validate required_status_checks
+            if "required_status_checks" in rules:
+                rsc = rules["required_status_checks"]
                 if not isinstance(rsc, dict):
                     raise ConfigError(
-                        f"'{branch_name}.required_status_checks' must be an object or null"
+                        f"Ruleset '{name}' required_status_checks must be an object"
                     )
                 if "contexts" in rsc and not isinstance(rsc["contexts"], list):
                     raise ConfigError(
-                        f"'{branch_name}.required_status_checks.contexts' must be an array"
+                        f"Ruleset '{name}' required_status_checks.contexts must be an array"
                     )
-
-        # Validate required_pull_request_reviews
-        if "required_pull_request_reviews" in protection:
-            rprr = protection["required_pull_request_reviews"]
-            if rprr is not None:
-                if not isinstance(rprr, dict):
-                    raise ConfigError(
-                        f"'{branch_name}.required_pull_request_reviews' must be an object or null"
-                    )
-                if "required_approving_review_count" in rprr:
-                    count = rprr["required_approving_review_count"]
-                    if not isinstance(count, int) or count < 0 or count > 6:
-                        raise ConfigError(
-                            f"'{branch_name}.required_approving_review_count' must be an integer between 0 and 6"
-                        )

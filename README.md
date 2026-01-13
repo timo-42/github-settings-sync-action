@@ -133,35 +133,65 @@ jobs:
 
 **Note:** Colors should be 6-character hex codes without the `#` prefix.
 
-### Branch Protection
+### Rulesets
+
+Rulesets are the modern way to protect branches and tags. They're more powerful than legacy branch protection.
 
 ```json
 {
-  "branch_protection": {
-    "main": {
-      "required_status_checks": {
-        "strict": true,
-        "contexts": ["build", "test"]
-      },
-      "enforce_admins": true,
-      "required_pull_request_reviews": {
-        "dismiss_stale_reviews": true,
-        "require_code_owner_reviews": false,
-        "required_approving_review_count": 1,
-        "require_last_push_approval": false
-      },
-      "restrictions": null,
-      "required_linear_history": false,
-      "allow_force_pushes": false,
-      "allow_deletions": false,
-      "block_creations": false,
-      "required_conversation_resolution": true,
-      "lock_branch": false,
-      "allow_fork_syncing": false
+  "rulesets": [
+    {
+      "name": "main-protection",
+      "target": "branch",
+      "enforcement": "active",
+      "branches": ["~DEFAULT_BRANCH", "main"],
+      "rules": {
+        "pull_request": {
+          "required_approving_review_count": 1,
+          "dismiss_stale_reviews_on_push": true,
+          "require_code_owner_review": false,
+          "require_last_push_approval": false,
+          "required_review_thread_resolution": true
+        },
+        "required_status_checks": {
+          "strict": true,
+          "contexts": ["build", "test"]
+        },
+        "required_signatures": false,
+        "required_linear_history": false,
+        "non_fast_forward": true,
+        "deletion": true
+      }
     }
-  }
+  ]
 }
 ```
+
+#### Ruleset Options
+
+| Field | Description |
+|-------|-------------|
+| `name` | Unique name for the ruleset |
+| `target` | `"branch"` or `"tag"` |
+| `enforcement` | `"active"`, `"evaluate"` (audit only), or `"disabled"` |
+| `branches` | Array of branch patterns (use `~DEFAULT_BRANCH` for default) |
+| `conditions` | Advanced: `ref_name.include` and `ref_name.exclude` patterns |
+
+#### Available Rules
+
+| Rule | Description |
+|------|-------------|
+| `pull_request` | Require PRs with reviews |
+| `required_status_checks` | Require CI checks to pass |
+| `required_signatures` | Require signed commits |
+| `required_linear_history` | Prevent merge commits |
+| `required_deployments` | Require deployment to environments |
+| `creation` | Restrict who can create matching refs |
+| `update` | Restrict who can push updates |
+| `deletion` | Prevent deletion |
+| `non_fast_forward` | Prevent force pushes |
+
+📚 **GitHub Docs:** [Repository Rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets)
 
 ## Examples
 
@@ -201,15 +231,95 @@ Apply settings to a different repository (requires a token with access):
     repository: 'owner/other-repo'
 ```
 
-## Required Permissions
+## Authentication & Tokens
 
-The `GITHUB_TOKEN` needs the following permissions:
+### Option 1: Use `GITHUB_TOKEN` (Recommended for same-repo)
 
-- `contents: read` — To read the settings file
-- `administration: write` — To update repository settings and branch protection
-- `issues: write` — To manage labels (if using labels sync)
+The built-in `GITHUB_TOKEN` works for most use cases:
 
-For branch protection on repositories you don't own, you may need a Personal Access Token (PAT) with `repo` scope.
+```yaml
+- uses: your-username/github-settings-sync-action@v1
+  with:
+    token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### Option 2: Personal Access Token (PAT)
+
+Required for:
+- Managing settings on **other repositories**
+- **Rulesets** (requires `administration:write`)
+- **Organization-level** settings
+
+#### Creating a Fine-Grained PAT (Recommended)
+
+1. Go to [GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens](https://github.com/settings/tokens?type=beta)
+2. Click **"Generate new token"**
+3. Set token name and expiration
+4. Under **"Repository access"**, select the repos you need
+5. Under **"Permissions"**, enable:
+   - `Administration`: Read and write
+   - `Contents`: Read-only
+   - `Issues`: Read and write (for labels)
+   - `Metadata`: Read-only
+6. Click **"Generate token"**
+
+Or use the **GitHub CLI**:
+
+```bash
+# Create a fine-grained PAT with required permissions
+gh auth token
+
+# Or create a new token interactively
+gh auth login --scopes "repo,admin:org"
+
+# View your current token
+gh auth status --show-token
+```
+
+#### Creating a Classic PAT
+
+1. Go to [GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)](https://github.com/settings/tokens)
+2. Click **"Generate new token (classic)"**
+3. Select scopes:
+   - `repo` (full control of private repositories)
+   - `admin:org` (if managing org-level rulesets)
+4. Click **"Generate token"**
+
+Or use the **GitHub CLI**:
+
+```bash
+# Generate a classic token with repo scope
+gh api -X POST /user/tokens -f scopes[]="repo" -f note="settings-sync"
+```
+
+#### Store the Token as a Secret
+
+```bash
+# Add token to your repository secrets using gh CLI
+gh secret set PAT_TOKEN --body "ghp_xxxxxxxxxxxx"
+```
+
+Then use it in your workflow:
+
+```yaml
+- uses: your-username/github-settings-sync-action@v1
+  with:
+    token: ${{ secrets.PAT_TOKEN }}
+```
+
+### Required Permissions Summary
+
+| Feature | GITHUB_TOKEN | Fine-Grained PAT | Classic PAT |
+|---------|--------------|------------------|-------------|
+| Repository settings | ✅ | `administration:write` | `repo` |
+| Labels | ✅ | `issues:write` | `repo` |
+| Rulesets | ❌ | `administration:write` | `repo` + `admin:org` |
+| Other repos | ❌ | Select repos | `repo` |
+
+📚 **GitHub Docs:**
+- [Creating a fine-grained PAT](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token)
+- [Creating a classic PAT](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-personal-access-token-classic)
+- [Automatic token authentication](https://docs.github.com/en/actions/security-guides/automatic-token-authentication)
 
 ## CLI Usage (Local Testing)
 

@@ -24,7 +24,7 @@ This is a **GitHub Action** written in pure Python (no 3rd party dependencies) t
 │   └── sync/
 │       ├── repository.py   # Sync repo settings (description, features, etc.)
 │       ├── labels.py       # Sync issue/PR labels
-│       └── branches.py     # Sync branch protection rules
+│       └── rulesets.py     # Sync repository rulesets (branch/tag rules)
 ├── examples/           # Example configuration files
 └── .github/
     ├── settings.json   # Dogfooding: this repo's own settings
@@ -79,7 +79,7 @@ python main.py --help
 |------|-----------------|
 | Add new repo setting | `config.py` (validation), `sync/repository.py` (sync logic) |
 | Add new label field | `config.py`, `sync/labels.py` |
-| Add branch protection option | `config.py`, `sync/branches.py` |
+| Add ruleset option | `config.py`, `sync/rulesets.py` |
 | Change action inputs | `action.yml`, `src/main.py` |
 
 ## API Reference
@@ -91,8 +91,11 @@ python main.py --help
 - `GET /repos/{owner}/{repo}/labels` - List labels
 - `POST /repos/{owner}/{repo}/labels` - Create label
 - `PATCH /repos/{owner}/{repo}/labels/{name}` - Update label
-- `GET /repos/{owner}/{repo}/branches/{branch}/protection` - Get branch protection
-- `PUT /repos/{owner}/{repo}/branches/{branch}/protection` - Set branch protection
+- `GET /repos/{owner}/{repo}/rulesets` - List rulesets
+- `POST /repos/{owner}/{repo}/rulesets` - Create ruleset
+- `PUT /repos/{owner}/{repo}/rulesets/{id}` - Update ruleset
+
+📚 **GitHub Rulesets API:** https://docs.github.com/en/rest/repos/rules
 
 ### Environment Variables
 

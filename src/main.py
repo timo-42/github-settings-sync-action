@@ -13,7 +13,7 @@ from pathlib import Path
 
 from config import load_config, ConfigError
 from github_api import GitHubClient, GitHubAPIError
-from sync import sync_repository_settings, sync_labels, sync_branch_protection
+from sync import sync_repository_settings, sync_labels, sync_rulesets
 
 # Configure logging
 logging.basicConfig(
@@ -185,23 +185,24 @@ def main() -> int:
             logger.error(f"Failed to sync labels: {e}")
             has_errors = True
 
-    # Sync branch protection
-    if "branch_protection" in config:
+    # Sync rulesets
+    if "rulesets" in config:
         logger.info("")
         logger.info("-" * 40)
-        logger.info("Branch Protection")
+        logger.info("Rulesets")
         logger.info("-" * 40)
         try:
-            result = sync_branch_protection(
-                client, owner, repo, config["branch_protection"], args.dry_run
+            result = sync_rulesets(
+                client, owner, repo, config["rulesets"], args.dry_run
             )
             if result.get("changed") or result.get("dry_run"):
                 results = result.get("results", {})
                 changes_summary.append(
-                    f"Branch protection: {len(results.get('updated', []))} branch(es)"
+                    f"Rulesets: {len(results.get('created', []))} created, "
+                    f"{len(results.get('updated', []))} updated"
                 )
         except GitHubAPIError as e:
-            logger.error(f"Failed to sync branch protection: {e}")
+            logger.error(f"Failed to sync rulesets: {e}")
             has_errors = True
 
     # Summary

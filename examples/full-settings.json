@@ -66,40 +66,63 @@
       "description": "This will not be worked on"
     }
   ],
-  "branch_protection": {
-    "main": {
-      "required_status_checks": {
-        "strict": true,
-        "contexts": ["build", "test", "lint"]
-      },
-      "enforce_admins": true,
-      "required_pull_request_reviews": {
-        "dismiss_stale_reviews": true,
-        "require_code_owner_reviews": true,
-        "required_approving_review_count": 2,
-        "require_last_push_approval": true
-      },
-      "restrictions": null,
-      "required_linear_history": true,
-      "allow_force_pushes": false,
-      "allow_deletions": false,
-      "block_creations": false,
-      "required_conversation_resolution": true,
-      "lock_branch": false,
-      "allow_fork_syncing": true
+  "rulesets": [
+    {
+      "name": "main-protection",
+      "target": "branch",
+      "enforcement": "active",
+      "branches": ["~DEFAULT_BRANCH", "main", "master"],
+      "rules": {
+        "pull_request": {
+          "required_approving_review_count": 2,
+          "dismiss_stale_reviews_on_push": true,
+          "require_code_owner_review": true,
+          "require_last_push_approval": true,
+          "required_review_thread_resolution": true
+        },
+        "required_status_checks": {
+          "strict": true,
+          "contexts": ["build", "test", "lint"]
+        },
+        "required_signatures": true,
+        "required_linear_history": true,
+        "non_fast_forward": true,
+        "deletion": true
+      }
     },
-    "develop": {
-      "required_status_checks": {
-        "strict": false,
-        "contexts": ["build"]
+    {
+      "name": "develop-protection",
+      "target": "branch",
+      "enforcement": "active",
+      "branches": ["develop", "dev"],
+      "rules": {
+        "pull_request": {
+          "required_approving_review_count": 1,
+          "dismiss_stale_reviews_on_push": false
+        },
+        "required_status_checks": {
+          "strict": false,
+          "contexts": ["build"]
+        },
+        "non_fast_forward": true,
+        "deletion": true
+      }
+    },
+    {
+      "name": "release-tags",
+      "target": "tag",
+      "enforcement": "active",
+      "conditions": {
+        "ref_name": {
+          "include": ["v*", "release-*"],
+          "exclude": ["v*-beta", "v*-alpha"]
+        }
       },
-      "enforce_admins": false,
-      "required_pull_request_reviews": {
-        "dismiss_stale_reviews": false,
-        "required_approving_review_count": 1
-      },
-      "allow_force_pushes": false,
-      "allow_deletions": false
+      "rules": {
+        "creation": true,
+        "deletion": true,
+        "update": true
+      }
     }
-  }
+  ]
 }

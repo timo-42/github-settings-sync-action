@@ -167,3 +167,36 @@ class GitHubClient:
     def delete_branch_protection(self, owner: str, repo: str, branch: str) -> None:
         """Delete branch protection rules."""
         self.delete(f"/repos/{owner}/{repo}/branches/{branch}/protection")
+
+    # Rulesets methods (newer API)
+    def get_rulesets(self, owner: str, repo: str) -> list:
+        """Get all rulesets for a repository."""
+        result = self.get(f"/repos/{owner}/{repo}/rulesets")
+        return result if result else []
+
+    def get_ruleset(self, owner: str, repo: str, ruleset_id: int) -> dict:
+        """Get a specific ruleset."""
+        result = self.get(f"/repos/{owner}/{repo}/rulesets/{ruleset_id}")
+        if result is None:
+            raise GitHubAPIError(f"Ruleset {ruleset_id} not found")
+        return result
+
+    def create_ruleset(self, owner: str, repo: str, ruleset: dict) -> dict:
+        """Create a new ruleset."""
+        result = self.post(f"/repos/{owner}/{repo}/rulesets", ruleset)
+        if result is None:
+            raise GitHubAPIError(f"Failed to create ruleset: {ruleset.get('name')}")
+        return result
+
+    def update_ruleset(
+        self, owner: str, repo: str, ruleset_id: int, ruleset: dict
+    ) -> dict:
+        """Update an existing ruleset."""
+        result = self.put(f"/repos/{owner}/{repo}/rulesets/{ruleset_id}", ruleset)
+        if result is None:
+            raise GitHubAPIError(f"Failed to update ruleset: {ruleset_id}")
+        return result
+
+    def delete_ruleset(self, owner: str, repo: str, ruleset_id: int) -> None:
+        """Delete a ruleset."""
+        self.delete(f"/repos/{owner}/{repo}/rulesets/{ruleset_id}")

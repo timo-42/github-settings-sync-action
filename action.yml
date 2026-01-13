@@ -41,9 +41,10 @@ runs:
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
-        SETTINGS_FILE: ${{ inputs.settings_file }}
-        DRY_RUN: ${{ inputs.dry_run }}
-        TARGET_REPOSITORY: ${{ inputs.repository }}
+        GITHUB_WORKSPACE: ${{ github.workspace }}
       run: |
-        cd "${{ github.action_path }}/src"
-        python main.py
+        python "${{ github.action_path }}/src/main.py" \
+          --token "$GITHUB_TOKEN" \
+          --settings-file "${{ inputs.settings_file }}" \
+          --repository "${{ inputs.repository || github.repository }}" \
+          ${{ inputs.dry_run == 'true' && '--dry-run' || '' }}

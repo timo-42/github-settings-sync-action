@@ -5,6 +5,7 @@ GitHub Settings Sync Action - Main Entry Point
 This action synchronizes GitHub repository settings from a JSON configuration file.
 """
 
+import argparse
 import logging
 import os
 import sys
@@ -27,12 +28,6 @@ def get_env(name: str, default: str = "") -> str:
     return os.environ.get(name, default)
 
 
-def get_bool_env(name: str, default: bool = False) -> bool:
-    """Get a boolean environment variable."""
-    value = get_env(name, str(default)).lower()
-    return value in ("true", "1", "yes")
-
-
 def set_output(name: str, value: str) -> None:
     """Set a GitHub Actions output variable."""
     github_output = get_env("GITHUB_OUTPUT")
@@ -44,41 +39,101 @@ def set_output(name: str, value: str) -> None:
         print(f"::set-output name={name}::{value}")
 
 
+def parse_args() -> argparse.Namespace:
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Synchronize GitHub repository settings from a JSON configuration file.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Dry run with default settings file
+  python main.py --token ghp_xxx --dry-run
+
+  # Apply settings from custom file
+  python main.py --token ghp_xxx --settings-file config/settings.json
+
+  # Target a different repository
+  python main.py --token ghp_xxx --repository owner/repo
+
+Environment variables:
+  GITHUB_TOKEN         GitHub authentication token
+  GITHUB_REPOSITORY    Default target repository (owner/repo)
+  GITHUB_WORKSPACE     Workspace path for resolving settings file
+  SETTINGS_FILE        Path to settings JSON file
+  DRY_RUN              Set to 'true' for dry run mode
+  TARGET_REPOSITORY    Override target repository
+        """,
+    )
+
+    parser.add_argument(
+        "--token",
+        default=get_env("GITHUB_TOKEN"),
+        help="GitHub token with repo permissions (default: $GITHUB_TOKEN)",
+    )
+
+    parser.add_argument(
+        "--settings-file",
+        default=get_env("SETTINGS_FILE", ".github/settings.json"),
+        help="Path to the settings JSON file (default: .github/settings.json)",
+    )
+
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=get_env("DRY_RUN", "false").lower() in ("true", "1", "yes"),
+        help="Preview changes without applying them",
+    )
+
+    parser.add_argument(
+        "--repository",
+        default=get_env("TARGET_REPOSITORY") or get_env("GITHUB_REPOSITORY"),
+        help="Target repository as owner/repo (default: $GITHUB_REPOSITORY)",
+    )
+
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Enable verbose (debug) logging",
+    )
+
+    return parser.parse_args()
+
+
 def main() -> int:
     """Main entry point."""
+    args = parse_args()
+
+    # Set log level
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
     logger.info("=" * 60)
     logger.info("GitHub Settings Sync Action")
     logger.info("=" * 60)
 
-    # Get inputs from environment
-    token = get_env("GITHUB_TOKEN")
-    settings_file = get_env("SETTINGS_FILE", ".github/settings.json")
-    dry_run = get_bool_env("DRY_RUN", False)
-    target_repo = get_env("TARGET_REPOSITORY")
-
     # Validate required inputs
-    if not token:
-        logger.error("GITHUB_TOKEN is required")
+    if not args.token:
+        logger.error("GitHub token is required. Use --token or set GITHUB_TOKEN")
         return 1
 
-    # Determine repository
-    if target_repo:
-        owner, repo = target_repo.split("/", 1)
-    else:
-        # Get from GITHUB_REPOSITORY (set by GitHub Actions)
-        github_repo = get_env("GITHUB_REPOSITORY")
-        if not github_repo:
-            logger.error("Could not determine target repository")
-            return 1
-        owner, repo = github_repo.split("/", 1)
+    if not args.repository:
+        logger.error("Repository is required. Use --repository or set GITHUB_REPOSITORY")
+        return 1
+
+    # Parse repository
+    if "/" not in args.repository:
+        logger.error("Repository must be in format: owner/repo")
+        return 1
+
+    owner, repo = args.repository.split("/", 1)
 
     logger.info(f"Target repository: {owner}/{repo}")
-    logger.info(f"Settings file: {settings_file}")
-    logger.info(f"Dry run: {dry_run}")
+    logger.info(f"Settings file: {args.settings_file}")
+    logger.info(f"Dry run: {args.dry_run}")
 
     # Resolve settings file path
     workspace = get_env("GITHUB_WORKSPACE", os.getcwd())
-    settings_path = Path(workspace) / settings_file
+    settings_path = Path(workspace) / args.settings_file
 
     # Load configuration
     try:
@@ -88,7 +143,7 @@ def main() -> int:
         return 1
 
     # Create GitHub client
-    client = GitHubClient(token)
+    client = GitHubClient(args.token)
 
     # Track overall changes
     changes_summary = []
@@ -102,7 +157,7 @@ def main() -> int:
         logger.info("-" * 40)
         try:
             result = sync_repository_settings(
-                client, owner, repo, config["repository"], dry_run
+                client, owner, repo, config["repository"], args.dry_run
             )
             if result.get("changed") or result.get("dry_run"):
                 changes_summary.append(
@@ -119,7 +174,7 @@ def main() -> int:
         logger.info("Labels")
         logger.info("-" * 40)
         try:
-            result = sync_labels(client, owner, repo, config["labels"], dry_run)
+            result = sync_labels(client, owner, repo, config["labels"], args.dry_run)
             if result.get("changed") or result.get("dry_run"):
                 results = result.get("results", {})
                 changes_summary.append(
@@ -138,7 +193,7 @@ def main() -> int:
         logger.info("-" * 40)
         try:
             result = sync_branch_protection(
-                client, owner, repo, config["branch_protection"], dry_run
+                client, owner, repo, config["branch_protection"], args.dry_run
             )
             if result.get("changed") or result.get("dry_run"):
                 results = result.get("results", {})
@@ -152,7 +207,7 @@ def main() -> int:
     # Summary
     logger.info("")
     logger.info("=" * 60)
-    if dry_run:
+    if args.dry_run:
         logger.info("DRY RUN COMPLETE - No changes were made")
     else:
         logger.info("SYNC COMPLETE")

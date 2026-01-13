@@ -211,6 +211,37 @@ The `GITHUB_TOKEN` needs the following permissions:
 
 For branch protection on repositories you don't own, you may need a Personal Access Token (PAT) with `repo` scope.
 
+## CLI Usage (Local Testing)
+
+You can run the sync locally without GitHub Actions:
+
+```bash
+cd src
+
+# Basic usage with dry run
+python main.py --token ghp_xxxx --repository owner/repo --dry-run
+
+# Apply settings from custom file
+python main.py --token ghp_xxxx --repository owner/repo \
+  --settings-file ../examples/full-settings.json
+
+# Verbose output for debugging
+python main.py --token ghp_xxxx --repository owner/repo --dry-run --verbose
+
+# See all options
+python main.py --help
+```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--token` | GitHub token (or set `GITHUB_TOKEN` env var) |
+| `--repository` | Target repo as `owner/repo` |
+| `--settings-file` | Path to settings JSON (default: `.github/settings.json`) |
+| `--dry-run` | Preview changes without applying |
+| `--verbose, -v` | Enable debug logging |
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.

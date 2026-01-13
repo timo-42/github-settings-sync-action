@@ -53,14 +53,17 @@ The `GitHubClient` class in `src/github_api.py` wraps `urllib.request`. To add n
 ### Testing Changes Locally
 
 ```bash
-# Set required environment variables
+# Run with command line arguments
+cd src
+python main.py --token "ghp_xxx" --repository "owner/repo" --dry-run
+
+# Or use environment variables
 export GITHUB_TOKEN="your-token"
 export GITHUB_REPOSITORY="owner/repo"
-export SETTINGS_FILE=".github/settings.json"
-export DRY_RUN="true"
+python main.py --dry-run
 
-# Run the action
-cd src && python main.py
+# See all options
+python main.py --help
 ```
 
 ## Code Conventions

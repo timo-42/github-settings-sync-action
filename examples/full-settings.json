@@ -1,0 +1,128 @@
+{
+  "repository": {
+    "description": "A fully configured repository with all settings",
+    "homepage": "https://example.com",
+    "private": false,
+    "has_issues": true,
+    "has_projects": true,
+    "has_wiki": false,
+    "has_discussions": true,
+    "is_template": false,
+    "default_branch": "main",
+    "allow_squash_merge": true,
+    "allow_merge_commit": false,
+    "allow_rebase_merge": true,
+    "allow_auto_merge": true,
+    "delete_branch_on_merge": true,
+    "allow_update_branch": true,
+    "squash_merge_commit_title": "PR_TITLE",
+    "squash_merge_commit_message": "PR_BODY",
+    "web_commit_signoff_required": false
+  },
+  "labels": [
+    {
+      "name": "bug",
+      "color": "d73a4a",
+      "description": "Something isn't working"
+    },
+    {
+      "name": "enhancement",
+      "color": "a2eeef",
+      "description": "New feature or request"
+    },
+    {
+      "name": "documentation",
+      "color": "0075ca",
+      "description": "Improvements or additions to documentation"
+    },
+    {
+      "name": "good first issue",
+      "color": "7057ff",
+      "description": "Good for newcomers"
+    },
+    {
+      "name": "help wanted",
+      "color": "008672",
+      "description": "Extra attention is needed"
+    },
+    {
+      "name": "priority: high",
+      "color": "b60205",
+      "description": "High priority issue"
+    },
+    {
+      "name": "priority: medium",
+      "color": "fbca04",
+      "description": "Medium priority issue"
+    },
+    {
+      "name": "priority: low",
+      "color": "0e8a16",
+      "description": "Low priority issue"
+    },
+    {
+      "name": "wontfix",
+      "color": "ffffff",
+      "description": "This will not be worked on"
+    }
+  ],
+  "rulesets": [
+    {
+      "name": "main-protection",
+      "target": "branch",
+      "enforcement": "active",
+      "branches": ["~DEFAULT_BRANCH", "main", "master"],
+      "rules": {
+        "pull_request": {
+          "required_approving_review_count": 2,
+          "dismiss_stale_reviews_on_push": true,
+          "require_code_owner_review": true,
+          "require_last_push_approval": true,
+          "required_review_thread_resolution": true
+        },
+        "required_status_checks": {
+          "strict": true,
+          "contexts": ["build", "test", "lint"]
+        },
+        "required_signatures": true,
+        "required_linear_history": true,
+        "non_fast_forward": true,
+        "deletion": true
+      }
+    },
+    {
+      "name": "develop-protection",
+      "target": "branch",
+      "enforcement": "active",
+      "branches": ["develop", "dev"],
+      "rules": {
+        "pull_request": {
+          "required_approving_review_count": 1,
+          "dismiss_stale_reviews_on_push": false
+        },
+        "required_status_checks": {
+          "strict": false,
+          "contexts": ["build"]
+        },
+        "non_fast_forward": true,
+        "deletion": true
+      }
+    },
+    {
+      "name": "release-tags",
+      "target": "tag",
+      "enforcement": "active",
+      "conditions": {
+        "ref_name": {
+          "include": ["v*", "release-*"],
+          "exclude": ["v*-beta", "v*-alpha"]
+        }
+      },
+      "rules": {
+        "creation": true,
+        "deletion": true,
+        "update": true
+      }
+    }
+  ]
+}

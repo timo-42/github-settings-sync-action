@@ -1,0 +1,62 @@
+{
+  "repository": {
+    "description": "Synchronize GitHub repository settings from a JSON configuration file - Settings as Code",
+    "homepage": "",
+    "has_issues": true,
+    "has_projects": false,
+    "has_wiki": false,
+    "has_discussions": false,
+    "delete_branch_on_merge": true,
+    "allow_squash_merge": true,
+    "allow_merge_commit": false,
+    "allow_rebase_merge": true,
+    "allow_auto_merge": true
+  },
+  "labels": [
+    {
+      "name": "bug",
+      "color": "d73a4a",
+      "description": "Something isn't working"
+    },
+    {
+      "name": "enhancement",
+      "color": "a2eeef",
+      "description": "New feature or request"
+    },
+    {
+      "name": "documentation",
+      "color": "0075ca",
+      "description": "Improvements or additions to documentation"
+    },
+    {
+      "name": "good first issue",
+      "color": "7057ff",
+      "description": "Good for newcomers"
+    },
+    {
+      "name": "help wanted",
+      "color": "008672",
+      "description": "Extra attention is needed"
+    }
+  ],
+  "rulesets": [
+    {
+      "name": "main-protection",
+      "target": "branch",
+      "enforcement": "active",
+      "branches": ["main"],
+      "rules": {
+        "pull_request": {
+          "required_approving_review_count": 1,
+          "dismiss_stale_reviews_on_push": true
+        },
+        "required_status_checks": {
+          "strict": true,
+          "contexts": ["lint", "validate-examples", "test-dry-run"]
+        },
+        "non_fast_forward": true,
+        "deletion": true
+      }
+    }
+  ]
+}

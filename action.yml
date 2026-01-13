@@ -1,0 +1,50 @@
+name: 'GitHub Settings Sync'
+description: 'Synchronize repository settings from a JSON configuration file - Settings as Code for GitHub'
+author: 'Your Name'
+
+branding:
+  icon: 'settings'
+  color: 'blue'
+
+inputs:
+  token:
+    description: 'GitHub token with repo permissions'
+    required: true
+  settings_file:
+    description: 'Path to the settings JSON file'
+    required: false
+    default: '.github/settings.json'
+  dry_run:
+    description: 'Preview changes without applying them'
+    required: false
+    default: 'false'
+  repository:
+    description: 'Target repository (owner/repo). Defaults to current repository'
+    required: false
+    default: ''
+
+outputs:
+  changes:
+    description: 'Summary of changes made'
+    value: ${{ steps.sync.outputs.changes }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Run settings sync
+      id: sync
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        GITHUB_WORKSPACE: ${{ github.workspace }}
+      run: |
+        python "${{ github.action_path }}/src/main.py" \
+          --token "$GITHUB_TOKEN" \
+          --settings-file "${{ inputs.settings_file }}" \
+          --repository "${{ inputs.repository || github.repository }}" \
+          ${{ inputs.dry_run == 'true' && '--dry-run' || '' }}
